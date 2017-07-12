@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0">
+    <title>应用门户</title>
+    <style>
+      .button {
+        height: 20px;
+        width: 500px;
+        background-color: blue;
+        margin: 10px;
+        line-height: 20px;
+        color: white
+      }
+      .text {
+        width: 500px;
+        border:1px solid black;
+        height: 140px;
+        margin: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app-box">
+      <div class="text" id="text"></div>
+      <div class="button" onclick="one()">1.	通过Authorization Code获取Access Token</div>
+      <div class="button" onclick="two()">Authorization Code</div>
+      <div class="button" onclick="three()">获取access_token</div>
+      <div class="button" onclick="four()">发送消息</div>
+    </div>
+    <script>
+      function GetArgsFromHref(sArgName) {
+        const sHref = window.location.href
+        var args    = sHref.split("?");
+        var retval = "";
+        
+        if(args[0] == sHref) /*参数为空*/
+        {
+            return retval; /*无需做任何处理*/
+        }  
+        var str = args[1];
+        args = str.split("&");
+        for(var i = 0; i < args.length; i ++)
+        {
+            str = args[i];
+            var arg = str.split("=");
+            if(arg.length <= 1) continue;
+            if(arg[0] == sArgName) retval = arg[1]; 
+        }
+        return retval;
+      }
+      const authCode = GetArgsFromHref("arg")
+      const dom =document.getElementById('text')
+      let token = ''
+      const log = function(server,mess){
+        const obj = new XMLHttpRequest();
+        obj.open("POST", server, true);
+        obj.setRequestHeader("Content-type", "application/x-www-form-urlencoded"); // 发送信息至服务器时内容编码类型
+        obj.onreadystatechange = function(){
+            var XMLHttpReq = obj;
+            if (XMLHttpReq.readyState == 4) {
+                if (XMLHttpReq.status == 200) {
+                    var text = XMLHttpReq.responseText;
+                    console.log(text)
+                    const data = JSON.parse(text)
+                    if (data.result) {
+                        token = data.result.token
+                        dom.innerHTML = 'token:' + token
+                    }
+                    else {
+                        alert("token失效")
+                    }
+                }
+            }
+        };
+        obj.send(JSON.stringify(mess));
+      };
+      let access_token = null
+      const log2 = function(server,mess){
+        const obj = new XMLHttpRequest();
+        obj.open("POST", server, true);
+        obj.setRequestHeader("Content-type", "application/x-www-form-urlencoded"); // 发送信息至服务器时内容编码类型
+        obj.onreadystatechange = function(){
+            var XMLHttpReq = obj;
+            if (XMLHttpReq.readyState == 4) {
+                if (XMLHttpReq.status == 200) {
+                    var text = XMLHttpReq.responseText;
+                    console.log(text)
+                }
+            }
+        };
+        obj.send(JSON.stringify(mess));
+      };
+      function one() {
+        log("http://baqi.linkdood.cn/platform/api2/oauth/token?appid=7616946181&appsecret=jaScJrP9bf3zczzk5D9bQw&code="+authCode, "");
+      }
+      function two() {
+        if (!token) alert("没有获取Token!")
+        else log2("http://baqi.linkdood.cn/platform/api2/oauth/getUserInfo?appid=7616946181&appsecret=jaScJrP9bf3zczzk5D9bQw&token=" + token, "");
+      }
+      const log3 = function(server){
+        const obj = new XMLHttpRequest();
+        obj.open("GET", server, true);
+        obj.setRequestHeader("Content-type", "application/json"); // 发送信息至服务器时内容编码类型
+        obj.onreadystatechange = function(){
+            var XMLHttpReq = obj;
+            if (XMLHttpReq.readyState == 4) {
+                if (XMLHttpReq.status == 200) {
+                    var text = XMLHttpReq.responseText;
+                    const data = JSON.parse(text)
+                    access_token = data.result.access_token
+                }
+            }
+        };
+        obj.send();
+      };
+      function three() {
+        log3("http://baqi.linkdood.cn/platform/api2/token?accessType=CLIENT&appID=7616946181&appSecret=jaScJrP9bf3zczzk5D9bQw");
+      }
+      const log4 = function(server,mess){
+        const obj = new XMLHttpRequest();
+        obj.open("POST", server, true);
+        obj.setRequestHeader("Content-type", "application/json"); // 发送信息至服务器时内容编码类型
+        obj.setRequestHeader("access-token", access_token); // 发送信息至服务器时内容编码类型
+        obj.onreadystatechange = function(){
+            var XMLHttpReq = obj;
+            if (XMLHttpReq.readyState == 4) {
+                if (XMLHttpReq.status == 200) {
+                    var text = XMLHttpReq.responseText;
+                    // dom.innerHTML = text
+                    console.log(text)
+                }
+            }
+        };
+        obj.send(mess);
+      };
+      function four() {
+        const msg = `{"sendUserID":"10100014944","messageType":"2","receTargetID":["10099997444"],"message":{"app":"ceshi","body":"111111"}}`
+        if(access_token === null) {
+          alert("没有获取到access_token")
+        }
+        else{
+          log4("http://baqi.linkdood.cn/platform/api2/message/sends", msg);
+        }
+      }
+    </script>
+  </body>
+</html>
