@@ -22,6 +22,7 @@ export default {
   },
   watch: {
     searchText(val) {
+      // 搜索内容改变向外发送更改后的字符串
       Order.$emit('Search', val)
     }
   }

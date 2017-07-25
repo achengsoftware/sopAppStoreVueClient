@@ -45,43 +45,43 @@ export default {
     Toast,
     Loading
   },
-  mounted(){
-    if(this.$route.params.name) this.userName = this.$route.params.name // 判断是否有保存的用户名
+  mounted () {
+    if (this.$route.params.name) this.userName = this.$route.params.name // 判断是否有保存的用户名
   },
   methods: {
-    preLogin: function() { //预登录函数
+    preLogin: function () { //预登录函数
       //判断是否为debug模式
-      if(DATA.debug) { window.location.href="#/Main"; return; }
+      if (DATA.debug) { window.location.href = "#/Main"; return; }
       //判断用户名和密码是否为空
-      if( this.userName === '' || this.password === '' ){ Order.$emit('Toast', '请正确输入账号和密码'); return null; }
+      if (this.userName === '' || this.password === '') { Order.$emit('Toast', '请正确输入账号和密码'); return null; }
       //预登录信号监听
       Order.$once('preLogin', (message) => {
-        if(!message) {Order.$emit('Toast', '返回数据为空！'); return;}
+        if (!message) { Order.$emit('Toast', '返回数据为空！'); return; }
         Order.$emit('Loading', 'hide')
-        setTimeout( ()=>{
-          switch(message.length){ //判断同名用户数量
-            case 0  : Order.$emit('Toast', '登录超时'); break; 
+        setTimeout(() => {
+          switch (message.length) { //判断同名用户数量
+            case 0: Order.$emit('Toast', '登录超时'); break;
             //如果用户所属的组织只有一个，那么自动帮用户选择登录
-            case 1  : const data = message[0]; this.login(data); break;
-            default : this.selectList = message; this.orgNumber = message.length;
+            case 1: const data = message[0]; this.login(data); break;
+            default: this.selectList = message; this.orgNumber = message.length;
           }
-        },0);
+        }, 0);
       })
       Order.$emit('Loading', 'show')
-      CHANNEL.preLogin( `{"userName":"${this.userName}","password":"${this.password}"}` )
+      CHANNEL.preLogin(`{"userName":"${this.userName}","password":"${this.password}"}`)
     },
-    login: function(thisOrg){ //登录函数
+    login: function (thisOrg) { //登录函数
       DATA.org = thisOrg //存储组织信息
       Order.$emit('Loading', 'show')
       //登录信号监听
-      Order.$once('login', (message)=> {
+      Order.$once('login', (message) => {
         //登录验证成功后执行的方法
-        function loginSuccess(){
+        function loginSuccess () {
           const nowTime = new Date().getTime()
           //从本地文件中读取缓存
-          CHANNEL.readData((data)=>{
+          CHANNEL.readData((data) => {
             const cache = JSON.parse(data)
-            if(cache.org.usbkeyidentification === DATA.org.usbkeyidentification){
+            if (cache.org.usbkeyidentification === DATA.org.usbkeyidentification) {
               DATA.orgTree = cache.orgTree
               DATA.orgList = cache.orgList
               DATA.appList = cache.appList
@@ -94,29 +94,29 @@ export default {
           }
           DATA.Timestamp = nowTime
           //保存用户信息
-          localforage.setItem('appData', appData, function (err){
-            if(err){ Order.$emit('Toast', '缓存用户数据失败'); return null; } //错误处理
-            const data = JSON.stringify({type:"8",appType: "1",appID: "0", orgID: DATA.org.orgID, unitID: DATA.org.unitId, orgCode: DATA.org.orgCode})
+          localforage.setItem('appData', appData, function (err) {
+            if (err) { Order.$emit('Toast', '缓存用户数据失败'); return null; } //错误处理
+            const data = JSON.stringify({ type: "8", appType: "1", appID: "0", orgID: DATA.org.orgID, unitID: DATA.org.unitId, orgCode: DATA.org.orgCode })
             CHANNEL.queryAppStore(data)
-            window.location.href="#/Main"
+            window.location.href = "#/Main"
           });
         }
-        setTimeout(()=>{
+        setTimeout(() => {
           Order.$emit('Loading', 'hide')
           //判断错误码是否为 0:成功 113:已登录
-          switch(message.code){
-            case 0  :  loginSuccess(); break;
-            case 113:  loginSuccess(); break;
-            case 112:  Order.$emit('Toast', `用户名或密码错误`); break;
-            default :  Order.$emit('Toast', `登录失败 Code:${message.code}`)
+          switch (message.code) {
+            case 0: loginSuccess(); break;
+            case 113: loginSuccess(); break;
+            case 112: Order.$emit('Toast', `用户名或密码错误`); break;
+            default: Order.$emit('Toast', `登录失败 Code:${message.code}`)
           }
           this.selectList = null
-        },0)
+        }, 0)
       })
       CHANNEL.login(JSON.stringify({
-        usbkeyidentification : DATA.org.usbkeyidentification, //身份证
-        password : this.password, //密码
-        unitId : DATA.org.unitId, //所在组织id
+        usbkeyidentification: DATA.org.usbkeyidentification, //身份证
+        password: this.password, //密码
+        unitId: DATA.org.unitId, //所在组织id
         userName: DATA.org.enname, //用户名
       }))
     },
@@ -127,8 +127,8 @@ export default {
 <style lang='less' scoped>
 .logo {
   width: 180px;
-  margin: 0 auto;
-  padding: 20px 0;
+  margin: 10px auto;
+  padding-top: 40px;
   height: 180px;
   display: block;
   img {
@@ -142,7 +142,8 @@ export default {
     text-align: center;
   }
 }
-.input-box{
+
+.input-box {
   width: 300px;
   margin: 0 auto;
   margin-top: 30px;
@@ -150,20 +151,22 @@ export default {
   overflow: hidden;
   border: 1px solid #e3e3e3;
 }
-.login{
+
+.login {
   height: 130px;
-  .user-name{
+  .user-name {
     border-bottom: 1px solid #fefefe;
   }
-  .password{
+  .password {
     border-top: 1px solid #e3e3e3;
   }
-  .user-name,.password{
+  .user-name,
+  .password {
     height: 50px;
     width: 100%;
     display: flex;
     background-color: white;
-    input{
+    input {
       height: 50px;
       border: 0;
       background-color: white;
@@ -171,7 +174,7 @@ export default {
       font-size: 1rem;
       padding: 0;
     }
-    .ico{
+    .ico {
       height: 50px;
       width: 50px;
       font-size: 1.2rem;
@@ -180,9 +183,9 @@ export default {
       color: #a4a9b2;
     }
   }
-
 }
-.button{
+
+.button {
   width: 300px;
   height: 45px;
   border-radius: 5px;
@@ -194,54 +197,56 @@ export default {
   font-size: 20px;
   box-shadow: 1px 1px 1px #888888;
 }
-.button:active{
+
+.button:active {
   background-color: blue;
 }
-.select-list{
-    height: 280px;
-    margin: 0 auto;
-    position: absolute;
-    top: 210px;
-    left: 0;
-    right: 0;
-    width: 90%;
-    border-radius: 5px;
-    .title{
-        height: 40px;
-        background-color: #dcd6d6;
-        border-radius: 5px 5px 0 0;
-        position:relative;
-        .ico{
-            color: cadetblue;
-            position: absolute;
-            right: 7px;
-            top: 7px;
-        }
+
+.select-list {
+  height: 280px;
+  margin: 0 auto;
+  position: absolute;
+  top: 210px;
+  left: 0;
+  right: 0;
+  width: 90%;
+  border-radius: 5px;
+  .title {
+    height: 40px;
+    background-color: #dcd6d6;
+    border-radius: 5px 5px 0 0;
+    position: relative;
+    .ico {
+      color: cadetblue;
+      position: absolute;
+      right: 7px;
+      top: 7px;
     }
-    .ok{
-        color: cadetblue;
-        line-height: 40px;
-        margin-left: 10px;
+  }
+  .ok {
+    color: cadetblue;
+    line-height: 40px;
+    margin-left: 10px;
+  }
+  .list {
+    touch-action: none;
+    overflow: auto;
+    height: 220px;
+    border: 1px solid #dcecec;
+    border-radius: 0 0 5px 5px;
+    li {
+      padding: 10px;
+      border-bottom: 1px solid #dcecec;
+      text-align: center;
     }
-    .list{
-        touch-action: none;
-        overflow: auto;
-        height: 220px;
-        border: 1px solid #dcecec;
-        border-radius: 0 0 5px 5px;
-        li{
-            padding: 10px;
-            border-bottom: 1px solid #dcecec;
-            text-align: center;
-        }
-        li:active{
-            background-color: #4899E0;
-            color: #FFF;
-        }
+    li:active {
+      background-color: #4899E0;
+      color: #FFF;
     }
+  }
 }
 
-.step{
+.step {
   width: 100%;
   text-align: center;
   color: #ccc;
@@ -250,13 +255,16 @@ export default {
     color: blue;
   }
 }
-.ico{
+
+.ico {
   font-size: 1.4rem;
   color: #ccc;
 }
-.hide{
-  visibility:hidden;
+
+.hide {
+  visibility: hidden;
 }
+
 .isSelectd {
   width: 100%;
   overflow: hidden;
@@ -268,8 +276,9 @@ export default {
     color: blue;
   }
 }
+
 @media screen and (max-height: 200px) {
-  .logo{
+  .logo {
     display: none;
   }
 }

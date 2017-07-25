@@ -69,8 +69,7 @@ export default {
       DATA.appList = this.appList //存储
     }
     // 获取本机已安装应用列表
-    Order.$once('getSystemAppList', (systemAppList) => {
-      log(systemAppList)
+    Order.$on('getSystemAppList', (systemAppList) => {
       DATA.systemAppList = systemAppList
     })
     CHANNEL.getSystemAppList()
@@ -90,9 +89,8 @@ export default {
             if (item.packageName.indexOf('.sop') > -1) {
               sopid = item.packageName.split('-')[0]
             }
-            log(item.version)
             if (DATA.systemAppList[sopid]) {
-              if (DATA.systemAppList[sopid].ver !== item.version.replace('V', '')) {
+              if (DATA.systemAppList[sopid].ver < item.version.replace('V', '')) {
                 this.updateNumber++
               }
             }
@@ -114,12 +112,12 @@ export default {
         this.appList = newAppList
         const iscroll = this.$refs.iscroll
         iscroll.refresh()
-        localforage.getItem("appData", (err, appData) => {
-          appData.org = DATA.org
-          appData.appList = newAppList
-          appData.installedAppID = DATA.installedAppID
-          localforage.setItem('appData', appData)
-        })
+        // localforage.getItem("appData", (err, appData) => {
+        //   appData.org = DATA.org
+        //   appData.appList = newAppList
+        //   appData.installedAppID = DATA.installedAppID
+        //   localforage.setItem('appData', appData)
+        // })
       }, 0);
     })
     CHANNEL.queryAppStore(JSON.stringify({ type: "1" }))
@@ -144,34 +142,39 @@ export default {
       }
       // 处理链接中的 idCard 和 userName
       let newUrl = thisApp.homeUrl
-      if (thisApp.id === 100002 || thisApp.type === 2) {
+      if (thisApp.id === 100002 || thisApp.id === 100001 || thisApp.type === 2) {
         newUrl = newUrl.replace("{{idCard}}", DATA.org.usbkeyidentification)
         newUrl = newUrl.replace("{{userName}}", DATA.org.enname)
+        // 如果有规定字段#useIframe那么使用iframe打开
+        if (newUrl.indexOf("#useIframe") > -1) {
+          DATA.iframeURL = newUrl
+          window.location.href = `#/Iframe/${thisApp.name}`
+        }
+        else {
+          // 使用无地址栏浏览器打开
+          if (thisApp.type === 2) {
+            newUrl = newUrl.replace("https", "browser")
+            newUrl = newUrl.replace("http", "browser")
+          }
+          const app = { "scheme": newUrl }
+          CHANNEL.opensopApp(JSON.stringify(app))
+        }
       } else {
+        newUrl = thisApp.activityName;
         // 获取authCode
-        log(thisApp.key)
+        newUrl = newUrl.replace("{{idCard}}", thisApp.key)
         const data = {
           userID: DATA.org.usbkeyidentification + "",
           appID: thisApp.key + "",
           accountType: thisApp.type + ""
         }
         Order.$once('getLoginAuthCode', (message) => {
+          let authCode = message.authCode
+          newUrl += `&authcode=${authCode}&appsecret=${thisApp.secret}`
+          const app = { "scheme": newUrl }
+          CHANNEL.opensopApp(JSON.stringify(app))
         })
         CHANNEL.getLoginAuthCode(JSON.stringify(data))
-      }
-      // 如果有规定字段#useIframe那么使用iframe打开
-      if (newUrl.indexOf("#useIframe") > -1) {
-        DATA.iframeURL = newUrl
-        window.location.href = `#/Iframe/${thisApp.name}`
-      }
-      else {
-        // 使用无地址栏浏览器打开
-        if (thisApp.type === 2) {
-          newUrl = newUrl.replace("https", "browser")
-          newUrl = newUrl.replace("http", "browser")
-        }
-        const app = { "scheme": newUrl }
-        CHANNEL.opensopApp(JSON.stringify(app))
       }
     },
     pressItem: function (thisApp) { //长按app事件
@@ -191,8 +194,9 @@ export default {
         DATA.appList[item].forEach(function (element, index) {
           //将没用被用户选择的应用筛选出来放入新的Json对象，如果有选择的标记mark
           if (element.isSelect) {
+            log(element.id)
             mark = true
-            CHANNEL.uninstallSopApp(element.packageName.split("-")[0])
+        //    CHANNEL.uninstallSopApp(element.packageName.split("-")[0])
             CHANNEL.queryAppStore(JSON.stringify({ type: "7", id: element.id }))
           }
           else {
